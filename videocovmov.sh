@@ -1,40 +1,40 @@
 #!/bin/bash
 
-# En az bir argüman girildiğinden emin ol
+# Ensure at least one argument is provided
 if [ "$#" -lt 1 ]; then
-    echo "Kullanım: $0 <dosya1> <dosya2> ..."
+    echo "Usage: $0 <file1> <file2> ..."
     exit 1
 fi
 
-# Aynı anda dönüştürülecek maksimum video sayısı
-# DNxHR dönüşümü diski ve işlemciyi çok kullanır, çok zorlanırsan bunu 2 yapabilirsin.
+# Maximum number of simultaneous video conversions
+# DNxHR conversion is highly disk and CPU intensive; you can lower this to 2 if your system struggles.
 MAX_JOBS=4
 
-# Dönüştürme işlemini bir fonksiyon haline getiriyoruz
+# Create a function for the conversion process
 convert_to_mov() {
     input_file="$1"
     input_file_name=$(basename "$input_file")
     input_file_name="${input_file_name%.*}"
     output_mov="${input_file_name}-converted.mov"
 
-    echo "[BAŞLADI] $input_file -> $output_mov"
+    echo "[STARTED] $input_file -> $output_mov"
 
-    # DaVinci Resolve'un en sevdiği format: DNxHR HQ codec, YUV422p renk ve PCM 16-bit ses
-    # Dosya yolu silinip sadece "ffmpeg" yapıldı (Global kullanım için)
+    # DaVinci Resolve's preferred format: DNxHR HQ codec, YUV422p color, and PCM 16-bit audio
+    # Using the global "ffmpeg" command
     ffmpeg -y -i "$input_file" -c:v dnxhd -profile:v dnxhr_hq -pix_fmt yuv422p -c:a pcm_s16le -f mov "$output_mov" </dev/null >/dev/null 2>&1
 
-    echo "[BİTTİ] $output_mov"
+    echo "[FINISHED] $output_mov"
 }
 
-# Fonksiyonu dışa aktarıyoruz
+# Export the function
 export -f convert_to_mov
 
-echo "Toplam $# dosya bulundu."
-echo "DaVinci Resolve için özel DNxHR formatında $MAX_JOBS video eşzamanlı dönüştürülecek..."
+echo "Found $# files in total."
+echo "$MAX_JOBS videos will be simultaneously converted to the DNxHR format for DaVinci Resolve..."
 echo "------------------------------------------------------------"
 
-# Tüm dosyaları xargs'e gönderip paralel (-P) olarak işliyoruz
+# Process all files in parallel (-P) using xargs
 printf "%s\n" "$@" | xargs -n 1 -P "$MAX_JOBS" -I {} bash -c 'convert_to_mov "{}"'
 
 echo "------------------------------------------------------------"
-echo "✅ Tüm MOV dönüştürme işlemleri başarıyla tamamlandı!"
+echo "✅ All MOV conversion processes completed successfully!"
