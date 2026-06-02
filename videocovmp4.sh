@@ -1,41 +1,41 @@
 #!/bin/bash
 
-# En az bir argüman girildiğinden emin ol
+# Ensure at least one argument is provided
 if [ "$#" -lt 1 ]; then
-    echo "Kullanım: $0 <dosya1> <dosya2> ..."
+    echo "Usage: $0 <file1> <file2> ..."
     exit 1
 fi
 
-# Aynı anda dönüştürülecek maksimum video sayısı
-# İşlemci çekirdek sayına göre ayarlayabilirsin (örneğin: 2, 4 veya 8)
+# Maximum number of simultaneous video conversions
+# You can adjust this based on your CPU core count (e.g., 2, 4, or 8)
 MAX_JOBS=4
 
-# Dönüştürme işlemini bir fonksiyon haline getiriyoruz
+# Create a function for the conversion process
 convert_to_mp4() {
     input_file="$1"
 
-    # Dosya adını ve uzantısını ayır
+    # Separate the filename and extension
     input_file_name=$(basename "$input_file")
     input_file_name="${input_file_name%.*}"
 
-    # Çıktı dosya adını belirle
+    # Set the output filename
     output_mp4="${input_file_name}-converted.mp4"
 
-    echo "[BAŞLADI] $input_file -> $output_mp4"
+    echo "[STARTED] $input_file -> $output_mp4"
 
-    # Bağımsız FFmpeg motoru ile MP4 dönüşümü
-    # Eklenen -y parametresi var olan dosyanın üzerine sorusuz yazar, </dev/null kısımları ekran karmaşasını önler.
-    /home/lvonx/.local/bin/ffmpeg -y -i "$input_file" -c:v libx264 -crf 23 -preset fast -pix_fmt yuv420p -c:a aac -b:a 192k "$output_mp4" </dev/null >/dev/null 2>&1
+    # MP4 conversion using FFmpeg
+    # Calls the standard system 'ffmpeg' command instead of a hardcoded path.
+    ffmpeg -y -i "$input_file" -c:v libx264 -crf 23 -preset fast -pix_fmt yuv420p -c:a aac -b:a 192k "$output_mp4" </dev/null >/dev/null 2>&1
 
-    echo "[BİTTİ] $output_mp4"
+    echo "[FINISHED] $output_mp4"
 }
 
-# Fonksiyonu paralel çalışabilmesi için dışa aktarıyoruz
+# Export the function so xargs can use it in parallel
 export -f convert_to_mp4
 
-echo "Toplam $# dosya bulundu. $MAX_JOBS video eşzamanlı olarak MP4'e dönüştürülecek..."
+echo "Found $# files in total. $MAX_JOBS videos will be converted to MP4 simultaneously..."
 
-# Tüm argümanları xargs ile paralel olarak işleme sok
+# Process all arguments in parallel using xargs
 printf "%s\n" "$@" | xargs -n 1 -P "$MAX_JOBS" -I {} bash -c 'convert_to_mp4 "{}"'
 
-echo "Tüm dönüştürme işlemleri başarıyla tamamlandı!"
+echo "All conversion processes completed successfully!"
