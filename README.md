@@ -22,8 +22,7 @@ Bu araç, Linux sistemlerde (Ubuntu/Debian, Fedora, Arch ailesi) DaVinci Resolve
 | Dosya | Açıklama |
 | :--- | :--- |
 | 📦 **davinci_resolve_installer.sh** | Bağımlılıkları **KURAR**, ekran kartını **HAZIRLAR**, Resolve'u **KURAR / GÜNCELLER** ve açılmama sorunlarını **ONARIR**. |
-| 🎞️ **videocovmov.sh** | MP4 dosyalarını kurgu için **MOV** formatına çevirir (Opsiyonel). |
-| 📤 **mov_to_mp4.sh** | Kurgu bitince dosyayı **MP4** olarak export eder (Opsiyonel). |
+| 🎞️ **video_convert.sh** | **MP4 ⇄ MOV** dönüştürücü: kurgudan önce **MOV (DNxHR)**, kurgudan sonra **MP4 (H.264)** (Opsiyonel). |
 
 ### 🚀 KULLANIM
 Resolve'un Linux `.zip` (veya `.run`) dosyasını Blackmagic Design sitesinden indirin, sonra:
@@ -111,6 +110,22 @@ Normalde gerekmez. Örnek: `DAVINCI_GPU=amd ./davinci_resolve_installer.sh`
 * **Script ile:** Yeni `.zip` / `.run` dosyasını İndirilenler klasörüne koyup scripti aynı şekilde çalıştırın; "güncelle mi, onar mı?" diye sorar.
 * **Blackmagic'in kendi kurulum dosyasıyla güncellediyseniz:** Güncelleme glib yamasını geri alır. Scripti tekrar çalıştırın, kurulu Resolve'u otomatik onarır.
 
+### 🎞️ VİDEO DÖNÜŞTÜRÜCÜ (OPSİYONEL)
+`video_convert.sh`, kurgu öncesi/sonrası dönüşümleri **tek dosyada** yapar. Yönü dosyanın kodeğine bakıp kendisi seçer (H.264/HEVC → MOV, DNxHR/ProRes → MP4):
+
+```bash
+chmod +x video_convert.sh
+./video_convert.sh video1.mp4 video2.mkv      # yönü kendisi seçer
+./video_convert.sh ~/İndirilenler/video       # klasördeki tüm videoları çevirir
+./video_convert.sh --to-mp4 export.mov        # yönü elle seç
+./video_convert.sh --help                     # tüm seçenekler
+```
+
+* 📁 Çıktılar **orijinal dosyanın klasörüne** `-converted` ekiyle yazılır; orijinallere dokunulmaz, var olan çıktı atlanır (`-f` ile üzerine yazılır).
+* ❌ Hatalar gösterilir ve özet verilir; başarısız dönüşüm "tamamlandı" gibi görünmez.
+* 🎚️ 10-bit kaynaklarda DNxHR HQX otomatik seçilir. `-j N` ile aynı anda kaç video çevrileceği, `-o DIR` ile çıktı klasörü ayarlanır.
+* 🟩 **Fedora:** Varsayılan `ffmpeg-free` paketi `libx264` içermez. Script bunu algılar, Cisco OpenH264 varsa onu kullanır; yoksa RPM Fusion'lı tam `ffmpeg`'e geçişi **onayınızla** önerir (`sudo dnf swap ffmpeg-free ffmpeg --allowerasing`).
+
 ### 🧰 SORUN GİDERME
 * 📝 Her şey `~/davinci-installer.log` dosyasına yazılır.
 * 🖥️ Resolve açılmıyorsa terminalden çalıştırıp hata çıktısına bakın: `QT_QPA_PLATFORM=xcb /opt/resolve/bin/resolve`
@@ -127,7 +142,7 @@ Normalde gerekmez. Örnek: `DAVINCI_GPU=amd ./davinci_resolve_installer.sh`
 ### ⚠️ KRİTİK NOTLAR
 * 🔌 **GPU:** Mutlaka **GÜNCEL NVIDIA** sürücülerini kullanın.
 * 🖥️ **XORG:** Genelde Wayland'da (XWayland ile) çalışır; açılmazsa giriş ekranında **X11 / "UBUNTU ON XORG"** oturumunu seçin.
-* 🎬 **CODEC:** Ücretsiz sürümde H.264 videolar için **TRANSCODE** gerekebilir (opsiyonel çevirici scriptler bunun içindir).
+* 🎬 **CODEC:** Ücretsiz sürümde H.264 videolar için **TRANSCODE** gerekebilir (opsiyonel `video_convert.sh` bunun içindir).
 
 ---
 
@@ -142,8 +157,7 @@ This tool **AUTOMATICALLY RESOLVES** DaVinci Resolve installation, GPU setup and
 | File | Description |
 | :--- | :--- |
 | 📦 **davinci_resolve_installer.sh** | **Installs** dependencies, **prepares** your GPU, **installs / updates** Resolve and **fixes** launch issues. |
-| 🎞️ **videocovmov.sh** | Transcodes MP4 to **MOV** for editing (Optional). |
-| 📤 **mov_to_mp4.sh** | Converts edited files back to **MP4** for export (Optional). |
+| 🎞️ **video_convert.sh** | **MP4 ⇄ MOV** converter: **MOV (DNxHR)** before editing, **MP4 (H.264)** after editing (Optional). |
 
 ### 🚀 USAGE
 Download the Linux `.zip` (or `.run`) of Resolve from the Blackmagic Design website, then:
@@ -231,6 +245,22 @@ Normally not needed. Example: `DAVINCI_GPU=amd ./davinci_resolve_installer.sh`
 * **With the script:** Drop the new `.zip` / `.run` into your Downloads folder and run the script the same way; it asks "update or repair?".
 * **If you updated with Blackmagic's own installer:** The update undoes the glib patch. Just run the script again; it repairs the installed Resolve automatically.
 
+### 🎞️ VIDEO CONVERTER (OPTIONAL)
+`video_convert.sh` does the before/after-editing conversions **in a single file**. It picks the direction from the file's codec (H.264/HEVC → MOV, DNxHR/ProRes → MP4):
+
+```bash
+chmod +x video_convert.sh
+./video_convert.sh video1.mp4 video2.mkv      # picks the direction by itself
+./video_convert.sh ~/Downloads/video          # converts every video in the folder
+./video_convert.sh --to-mp4 export.mov        # choose the direction manually
+./video_convert.sh --help                     # all options
+```
+
+* 📁 Outputs are written **next to the original file** with a `-converted` suffix; originals are never touched and existing outputs are skipped (`-f` overwrites).
+* ❌ Errors are shown and a summary is printed; a failed conversion never looks like "done".
+* 🎚️ DNxHR HQX is chosen automatically for 10-bit sources. `-j N` sets how many videos run at once, `-o DIR` sets the output folder.
+* 🟩 **Fedora:** the default `ffmpeg-free` package has no `libx264`. The script detects this, uses Cisco OpenH264 if available, otherwise offers (with your **confirmation**) to switch to the full RPM Fusion `ffmpeg` (`sudo dnf swap ffmpeg-free ffmpeg --allowerasing`).
+
 ### 🧰 TROUBLESHOOTING
 * 📝 Everything is logged to `~/davinci-installer.log`.
 * 🖥️ If Resolve doesn't start, run it from a terminal and read the error output: `QT_QPA_PLATFORM=xcb /opt/resolve/bin/resolve`
@@ -247,7 +277,7 @@ Normally not needed. Example: `DAVINCI_GPU=amd ./davinci_resolve_installer.sh`
 ### ⚠️ CRITICAL TIPS
 1. 🔌 **GPU:** Ensure you are using the latest proprietary **NVIDIA** drivers.
 2. 🖥️ **XORG:** It usually works on Wayland (via XWayland); if it doesn't launch, switch to the **X11 / "UBUNTU ON XORG"** session at login.
-3. 🎬 **CODEC:** The free version may require transcoding to **MOV/PRORES** for H.264 footage (the optional converter scripts are for this).
+3. 🎬 **CODEC:** The free version may require transcoding to **MOV/PRORES** for H.264 footage (the optional `video_convert.sh` is for this).
 
 ---
 *Created with ❤️ for the Linux Community by a Professional Video Editor*
